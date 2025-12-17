@@ -1,0 +1,136 @@
+// Juego móvil simple en Flutter (Android / iOS)
+// Concepto: el jugador se mueve y recoge "ecos" evitando enemigos
+// Requiere Flutter SDK
+
+import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:math';
+
+void main() {
+  runApp(const MyGame());
+}
+
+class MyGame extends StatelessWidget {
+  const MyGame({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: GameScreen(),
+    );
+  }
+}
+
+class GameScreen extends StatefulWidget {
+  const GameScreen({super.key});
+
+  @override
+  State<GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends State<GameScreen> {
+  double playerX = 150;
+  double playerY = 300;
+  double echoX = 100;
+  double echoY = 200;
+  double enemyX = 50;
+  double enemyY = 50;
+
+  int score = 0;
+  Timer? gameLoop;
+
+  @override
+  void initState() {
+    super.initState();
+    startGame();
+  }
+
+  void startGame() {
+    gameLoop = Timer.periodic(const Duration(milliseconds: 30), (timer) {
+      setState(() {
+        enemyY += 2;
+        if (enemyY > 600) enemyY = -40;
+
+        if ((playerX - echoX).abs() < 30 && (playerY - echoY).abs() < 30) {
+          score++;
+          echoX = Random().nextDouble() * 300;
+          echoY = Random().nextDouble() * 500;
+        }
+
+        if ((playerX - enemyX).abs() < 30 && (playerY - enemyY).abs() < 30) {
+          gameLoop?.cancel();
+          showGameOver();
+        }
+      });
+    });
+  }
+
+  void showGameOver() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Fin del juego'),
+        content: Text('Ecos recolectados: $score'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              resetGame();
+            },
+            child: const Text('Reiniciar'),
+          )
+        ],
+      ),
+    );
+  }
+
+  void resetGame() {
+    setState(() {
+      playerX = 150;
+      playerY = 300;
+      enemyY = 50;
+      score = 0;
+      startGame();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            playerX += details.delta.dx;
+            playerY += details.delta.dy;
+          });
+        },
+        child: Stack(
+          children: [
+            Positioned(
+              top: 40,
+              left: 20,
+              child: Text('Ecos: $score', style: const TextStyle(color: Colors.white, fontSize: 20)),
+            ),
+            Positioned(
+              left: playerX,
+              top: playerY,
+              child: Container(width: 30, height: 30, color: Colors.blue),
+            ),
+            Positioned(
+              left: echoX,
+              top: echoY,
+              child: Container(width: 20, height: 20, color: Colors.green),
+            ),
+            Positioned(
+              left: enemyX,
+              top: enemyY,
+              child: Container(width: 30, height: 30, color: Colors.red),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
